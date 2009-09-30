@@ -8,6 +8,13 @@
 #define M_PI 3.14159265
 #endif
 
+#define tileSize 4.5f
+#define edgeSize 0.5f
+
+
+/* This holds the call-list for the tile */
+GLuint tile;
+
 void viewPort(int width, int height) {
 	GLfloat ratio = (GLfloat) height / (GLfloat) width;
 
@@ -19,36 +26,63 @@ void viewPort(int width, int height) {
 	glLoadIdentity();
 }
 
-void initWindow() {
+void init() {
 	glShadeModel(GL_SMOOTH);
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-	glClearDepth(10.0f);
+	glClearColor(0.9f, 0.9f, 0.9f, 0.0f);
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_LINE_SMOOTH);
+	glEnable(GL_POLYGON_SMOOTH);
 	glDepthFunc(GL_LEQUAL);
+
+	tile=glGenLists(1);
+	glNewList(tile, GL_COMPILE);
+	/* This tile is centred on the point given. */
+	glBegin(GL_QUADS);
+	/* First the tile */
+	glColor3f(1.0f,1.0f,1.0f);
+	glVertex3f(-(tileSize/2), 0.0f, -(tileSize/2));
+	glVertex3f(tileSize/2, 0.0f, -(tileSize/2));
+	glVertex3f(tileSize/2, 0.0f, tileSize/2);
+	glVertex3f(-(tileSize/2), 0.0f, tileSize/2);
+
+	/* Now the edgdes */
+	glColor3f(0.0f, 0.0f, 0.0f);
+	/* Back Edge */
+	glVertex3f(-(tileSize/2), 0.0f, -(tileSize/2));
+	glVertex3f((tileSize/2)+edgeSize, 0.0f, -(tileSize/2));
+	glVertex3f((tileSize/2)+edgeSize, 0.0f, -((tileSize/2)+edgeSize));
+	glVertex3f(-(tileSize/2), 0.0f, -((tileSize/2)+edgeSize));
+
+	/* Right Edge */
+	glVertex3f(tileSize/2, 0.0f, -(tileSize/2));
+	glVertex3f(tileSize/2, 0.0f, (tileSize/2)+edgeSize);
+	glVertex3f((tileSize/2)+edgeSize, 0.0f, (tileSize/2)+edgeSize);
+	glVertex3f((tileSize/2)+edgeSize, 0.0f, -(tileSize/2));
+
+	/* Front Edge */
+	glVertex3f(tileSize/2, 0.0f, tileSize/2);
+	glVertex3f(-((tileSize/2)+edgeSize), 0.0f, tileSize/2);
+	glVertex3f(-((tileSize/2)+edgeSize), 0.0f, (tileSize/2)+edgeSize);
+	glVertex3f(tileSize/2, 0.0f, (tileSize/2)+edgeSize);
+
+	/* Left Edge */
+	glVertex3f(-(tileSize/2), 0.0f, tileSize/2);
+	glVertex3f(-(tileSize/2), 0.0f, -((tileSize/2)+edgeSize));
+	glVertex3f(-((tileSize/2)+edgeSize), 0.0f, -((tileSize/2)+edgeSize));
+	glVertex3f(-((tileSize/2)+edgeSize), 0.0f, tileSize/2);
+
+	glEnd();
+	glEndList();
 }
 
 void Draw() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
 
-	glTranslatef(-1.5f, 0.0f, -15.0f);
-	glBegin(GL_TRIANGLES);
+	glTranslatef(0.0f, 0.0f, -30.0f);
 
-	glVertex3f(0.0f, 1.0f, 0.0f);
-	glVertex3f(-1.0f, -1.0f, 0.0f);
-	glVertex3f(1.0f, -1.0f, 0.0f);
-
-	glEnd();
-
-	glTranslatef(3.0f, 0.0f, 0.0f);
-	glBegin(GL_QUADS);
-
-	glVertex3f(-1.0f, 1.0f, 0.0f);
-	glVertex3f(1.0f, 1.0f, 0.0f);
-	glVertex3f(1.0f, -1.0f, 0.0f);
-	glVertex3f(-1.0f,-1.0f, 0.0f);
-
-	glEnd();
+	glRotatef(45, 1.0f, 0.0f, 0.0f);
+	glCallList(tile);
 
 	SDL_GL_SwapBuffers();
 
@@ -73,7 +107,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	SDL_WM_SetCaption("Battle Grid", "battlegrid");
-	initWindow();
+	init();
 	viewPort(screen->w, screen->h);
 
 	while (!done) {
