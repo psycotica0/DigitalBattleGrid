@@ -8,8 +8,8 @@
 #define M_PI 3.14159265
 #endif
 
-#define tileSize 4.5f
-#define edgeSize 0.5f
+#define tileSize 0.8f
+#define edgeSize 0.1f
 
 
 /* This holds the call-list for the tile */
@@ -79,10 +79,32 @@ void Draw() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
 
-	glTranslatef(0.0f, 0.0f, -30.0f);
-
-	glRotatef(45, 1.0f, 0.0f, 0.0f);
-	glCallList(tile);
+	glTranslatef(-5.0f, 2.0f, -30.0f);
+	glRotatef(30, 1.0f, 0.0f, 0.0f);
+	glRotatef(50, 0.0f, 1.0f, 0.0f);
+	{
+		int x;
+		int z;
+		int y;
+		for (y = 0; y < 2; y++) {
+			for (z = 0; z < 5; z++) {
+				for (x = 0; x < 5; x++) {
+					glCallList(tile);
+					glTranslatef(tileSize + edgeSize, 0.0f, 0.0f);
+				}
+				glTranslatef(-5 * (tileSize+edgeSize), 0.0f, tileSize + edgeSize);
+			}
+			glTranslatef(0.0f, -(tileSize + edgeSize)/2, -(tileSize + edgeSize)/2);
+			glRotatef(90, 1.0f, 0.0f, 0.0f);
+			for (x = 0; x < 5; x++) {
+				glCallList(tile);
+				glTranslatef(tileSize + edgeSize, 0.0f, 0.0f);
+			}
+			glTranslatef(-5 * (tileSize+edgeSize), 0.0f, 0.0f);
+			glRotatef(90, -1.0f, 0.0f, 0.0f);
+			glTranslatef(0.0f, -(tileSize + edgeSize)/2, (tileSize + edgeSize)/2);
+		}
+	}
 
 	SDL_GL_SwapBuffers();
 
