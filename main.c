@@ -8,8 +8,58 @@
 #define M_PI 3.14159265
 #endif
 
-#define tileSize 0.8f
-#define edgeSize 0.1f
+#define DegToRad M_PI/180
+
+#define tileSize 4.5f
+#define edgeSize 0.5f
+
+/* 
+This struct keeps track of the camera position and rotation 
+
+yaw is rotation around the y axis, where positive turns to the right
+pitch is the rotation around the x axis, where positive looks up
+roll is rotation around z axis where positive tilts to the right
+*/
+
+typedef struct {
+	float x,y,z;
+	float yaw, pitch, roll;
+} Camera;
+
+Camera mainCam;
+
+float camMatrix[16];
+
+void UseCam(Camera* cam) {
+	/* Calculate All Angles */
+	/* (Negate the angles becuase we are actually dealing with the object, not the cam) */
+	float sinYaw = sin(DegToRad * -cam->yaw);
+	float cosYaw = cos(DegToRad * -cam->yaw);
+	float sinPitch = sin(DegToRad * -cam->pitch);
+	float cosPitch = cos(DegToRad * -cam->pitch);
+	float sinRoll = sin(DegToRad * -cam->roll);
+	float cosRoll = cos(DegToRad * -cam->roll);
+
+	camMatrix[0] = (cosYaw * cosRoll) + (sinYaw * sinPitch * sinRoll);
+	camMatrix[1] = (cosYaw * sinRoll) - (sinYaw * sinPitch * cosRoll);
+	camMatrix[2] = sinYaw * cosPitch;
+
+	camMatrix[4] = -cosPitch * sinRoll;
+	camMatrix[5] = cosPitch * cosRoll;
+	camMatrix[6] = sinPitch;
+
+	camMatrix[8] = (-sinYaw * cosRoll) + (cosYaw * sinPitch * sinRoll);
+	camMatrix[9] = (-sinYaw * sinRoll) - (cosYaw * sinPitch * cosRoll);
+	camMatrix[10] = cosYaw * cosPitch;
+
+	/* Translate */
+	/* In order to work normally it has to be translated with respect to the rotations we've performed above */
+	camMatrix[12] = -1 * ((cam->x * camMatrix[0]) + (cam->y *camMatrix[4]) + (cam->z * camMatrix[8]));
+	camMatrix[13] = -1 * ((cam->x * camMatrix[1]) + (cam->y *camMatrix[5]) + (cam->z * camMatrix[9]));
+	camMatrix[14] = -1 * ((cam->x * camMatrix[2]) + (cam->y *camMatrix[6]) + (cam->z * camMatrix[10]));
+
+	glLoadMatrixf(camMatrix);
+}
 
 
 /* This holds the call-list for the tile */
@@ -21,7 +71,7 @@ void viewPort(int width, int height) {
 	glViewport(0, 0, (GLint) width, (GLint) height);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glFrustum(-1.0, 1.0, -ratio, ratio, 5.0, 60.0);
+	glFrustum(-5.0f, 5.0f, -5 * ratio, 5 * ratio, 5.0f, 200.0f);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 }
@@ -73,15 +123,41 @@ void init() {
 
 	glEnd();
 	glEndList();
+
+	/* Initialize Camera */
+	mainCam.x = 10;
+	mainCam.y = 8;
+	mainCam.z = 20;
+
+	mainCam.yaw = 0;
+	mainCam.pitch = -30;
+	mainCam.roll = 0;
+
+	/* Initialize Cam Matrix */
+	{
+		int x;
+		for (x = 0; x < 16; x++) {
+			switch (x) {
+				case 0:
+				case 5:
+				case 10:
+				case 15:
+					/* The Diagonals */
+					/* We want to start with identity */
+					camMatrix[x] = 1;
+					break;
+				default:
+					camMatrix[x] = 0;
+			}
+		}
+	}
 }
 
 void Draw() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
 
-	glTranslatef(-5.0f, 2.0f, -30.0f);
-	glRotatef(30, 1.0f, 0.0f, 0.0f);
-	glRotatef(50, 0.0f, 1.0f, 0.0f);
+	UseCam(&mainCam);
 	{
 		int x;
 		int z;
@@ -113,14 +189,15 @@ void Draw() {
 
 #define WIDTH 800
 #define HEIGHT 400
+#define DEG_SPEED 5.0f
+#define FEET_SPEED 0.5f
 
 int main(int argc, char* argv[]) {
 	SDL_Surface *screen;
 	int done=0;
-
+	Uint8* keyState;
 
 	SDL_Init(SDL_INIT_VIDEO);
-
 	screen = SDL_SetVideoMode(WIDTH, HEIGHT, 16, SDL_OPENGL);
 	if (!screen) {
 		fprintf(stderr, "Couldn't Set Video Mode. Error: %s\n", SDL_GetError);
@@ -140,6 +217,44 @@ int main(int argc, char* argv[]) {
 					done=1;
 					break;
 			}
+		}
+		keyState = SDL_GetKeyState(NULL);
+
+		if (keyState[SDLK_UP]) {
+			mainCam.z -= FEET_SPEED;
+		}
+		if (keyState[SDLK_DOWN]) {
+			mainCam.z += FEET_SPEED;
+		}
+		if (keyState[SDLK_LEFT]) {
+			mainCam.x -= FEET_SPEED;
+		}
+		if (keyState[SDLK_RIGHT]) {
+			mainCam.x += FEET_SPEED;
+		}
+		if (keyState[SDLK_i]) {
+			mainCam.y += FEET_SPEED;
+		}
+		if (keyState[SDLK_k]) {
+			mainCam.y -= FEET_SPEED;
+		}
+		if (keyState[SDLK_j]) {
+			mainCam.yaw -= DEG_SPEED;
+		}
+		if (keyState[SDLK_l]) {
+			mainCam.yaw += DEG_SPEED;
+		}
+		if (keyState[SDLK_w]) {
+			mainCam.pitch += DEG_SPEED;
+		}
+		if (keyState[SDLK_s]) {
+			mainCam.pitch -= DEG_SPEED;
+		}
+		if (keyState[SDLK_a]) {
+			mainCam.roll -= DEG_SPEED;
+		}
+		if (keyState[SDLK_d]) {
+			mainCam.roll += DEG_SPEED;
 		}
 		Draw();
 		usleep(125000);
