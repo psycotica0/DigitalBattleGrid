@@ -71,6 +71,14 @@ void drawBlankTile(Tile* tile) {
 		drawFloorTile(tile);
 		glPopMatrix();
 	}
+
+	glPushMatrix();
+	glTranslatef(0.0f, tileSize + (2*edgeSize), 0.0f);
+	glBegin(GL_QUADS);
+	glColor3f(0.0f, 0.0f, 0.0f);
+	flatSquare(tileSize + (2*edgeSize));
+	glEnd();
+	glPopMatrix();
 }
 
 void initMap() {
