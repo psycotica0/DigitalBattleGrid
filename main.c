@@ -4,21 +4,16 @@
 #include <gl.h>
 #include <SDL/SDL.h>
 #include "cam.h"
-
-#ifndef M_PI
-#define M_PI 3.14159265
-#endif
-
-#define DegToRad M_PI/180
-
-#define tileSize 4.5f
-#define edgeSize 0.5f
+#include "map.h"
+#include "constants.h"
 
 Camera mainCam;
 
 
 /* This holds the call-list for the tile */
 GLuint tile;
+
+World* testWorld;
 
 void viewPort(int width, int height) {
 	GLfloat ratio = (GLfloat) height / (GLfloat) width;
@@ -32,6 +27,7 @@ void viewPort(int width, int height) {
 }
 
 void init() {
+	initMap();
 	glShadeModel(GL_SMOOTH);
 	glClearColor(0.9f, 0.9f, 0.9f, 0.0f);
 	glEnable(GL_DEPTH_TEST);
@@ -39,45 +35,7 @@ void init() {
 	glEnable(GL_POLYGON_SMOOTH);
 	glDepthFunc(GL_LEQUAL);
 
-	tile=glGenLists(1);
-	glNewList(tile, GL_COMPILE);
-	/* This tile is centred on the point given. */
-	glBegin(GL_QUADS);
-	/* First the tile */
-	glColor3f(1.0f,1.0f,1.0f);
-	glVertex3f(-(tileSize/2), 0.0f, -(tileSize/2));
-	glVertex3f(tileSize/2, 0.0f, -(tileSize/2));
-	glVertex3f(tileSize/2, 0.0f, tileSize/2);
-	glVertex3f(-(tileSize/2), 0.0f, tileSize/2);
-
-	/* Now the edgdes */
-	glColor3f(0.0f, 0.0f, 0.0f);
-	/* Back Edge */
-	glVertex3f(-(tileSize/2), 0.0f, -(tileSize/2));
-	glVertex3f((tileSize/2)+edgeSize, 0.0f, -(tileSize/2));
-	glVertex3f((tileSize/2)+edgeSize, 0.0f, -((tileSize/2)+edgeSize));
-	glVertex3f(-(tileSize/2), 0.0f, -((tileSize/2)+edgeSize));
-
-	/* Right Edge */
-	glVertex3f(tileSize/2, 0.0f, -(tileSize/2));
-	glVertex3f(tileSize/2, 0.0f, (tileSize/2)+edgeSize);
-	glVertex3f((tileSize/2)+edgeSize, 0.0f, (tileSize/2)+edgeSize);
-	glVertex3f((tileSize/2)+edgeSize, 0.0f, -(tileSize/2));
-
-	/* Front Edge */
-	glVertex3f(tileSize/2, 0.0f, tileSize/2);
-	glVertex3f(-((tileSize/2)+edgeSize), 0.0f, tileSize/2);
-	glVertex3f(-((tileSize/2)+edgeSize), 0.0f, (tileSize/2)+edgeSize);
-	glVertex3f(tileSize/2, 0.0f, (tileSize/2)+edgeSize);
-
-	/* Left Edge */
-	glVertex3f(-(tileSize/2), 0.0f, tileSize/2);
-	glVertex3f(-(tileSize/2), 0.0f, -((tileSize/2)+edgeSize));
-	glVertex3f(-((tileSize/2)+edgeSize), 0.0f, -((tileSize/2)+edgeSize));
-	glVertex3f(-((tileSize/2)+edgeSize), 0.0f, tileSize/2);
-
-	glEnd();
-	glEndList();
+	testWorld = buildTestWorld();
 
 	/* Initialize Camera */
 	mainCam.x = 10;
@@ -113,29 +71,8 @@ void Draw() {
 	glLoadIdentity();
 
 	UseCam(&mainCam);
-	{
-		int x;
-		int z;
-		int y;
-		for (y = 0; y < 2; y++) {
-			for (z = 0; z < 5; z++) {
-				for (x = 0; x < 5; x++) {
-					glCallList(tile);
-					glTranslatef(tileSize + edgeSize, 0.0f, 0.0f);
-				}
-				glTranslatef(-5 * (tileSize+edgeSize), 0.0f, tileSize + edgeSize);
-			}
-			glTranslatef(0.0f, -(tileSize + edgeSize)/2, -(tileSize + edgeSize)/2);
-			glRotatef(90, 1.0f, 0.0f, 0.0f);
-			for (x = 0; x < 5; x++) {
-				glCallList(tile);
-				glTranslatef(tileSize + edgeSize, 0.0f, 0.0f);
-			}
-			glTranslatef(-5 * (tileSize+edgeSize), 0.0f, 0.0f);
-			glRotatef(90, -1.0f, 0.0f, 0.0f);
-			glTranslatef(0.0f, -(tileSize + edgeSize)/2, (tileSize + edgeSize)/2);
-		}
-	}
+
+	renderWorld(testWorld);
 
 	SDL_GL_SwapBuffers();
 
