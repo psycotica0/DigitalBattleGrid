@@ -1,6 +1,9 @@
 #include "map.h"
 #include "constants.h"
 
+TileType* tileTypes;
+
+#define NumTileTypes 3
 TileType* floorTile = NULL;
 TileType* holeTile = NULL;
 TileType* blankTile = NULL;
@@ -82,21 +85,16 @@ void drawBlankTile(Tile* tile) {
 }
 
 void initMap() {
-	floorTile = malloc(sizeof(TileType));
-	if (floorTile == NULL) exit(1);
-	holeTile = malloc(sizeof(TileType));
-	if (holeTile == NULL) exit(1);
-	blankTile = malloc(sizeof(TileType));
-	if (blankTile == NULL) exit(1);
+	tileTypes = malloc(sizeof(TileType) * NumTileTypes);
+	if (tileTypes == NULL) exit(1);
 
-	floorTile->code[0] = '0';
-	floorTile->code[1] = '1';
+	floorTile = tileTypes;
+	holeTile = tileTypes + 1;
+	blankTile = tileTypes + 2;
 
-	holeTile->code[0] = '0';
-	holeTile->code[1] = '1';
-
-	blankTile->code[0] = '.';
-	blankTile->code[1] = '.';
+	memcpy(floorTile->code, "01", 2);
+	memcpy(holeTile->code, "00", 2);
+	memcpy(blankTile->code, "..", 2);
 
 	floorTile->callList = glGenLists(1);
 	glNewList(floorTile->callList, GL_COMPILE);
@@ -187,60 +185,13 @@ void renderWorld(World* world) {
 	}
 }
 
-World* buildTestWorld() {
-	World* world;
-	Tile* tileArray;
-	int x,y;
-
-	world = malloc(sizeof(World));
-	world->rooms = malloc(sizeof(RoomList));
-	world->rooms->next = NULL;
-
-	world->rooms->value = malloc(sizeof(Room));
-	world->rooms->value->pos.x = 0;
-	world->rooms->value->pos.y = 0;
-	world->rooms->value->pos.elevation = 0;
-	world->rooms->value->metadata = NULL;
-
-	world->rooms->value->map = malloc(sizeof(Map));
-
-	tileArray = malloc(sizeof(Tile)*9);
-
-	world->rooms->value->map->TopLeft=tileArray;
-
-	for (x=0; x<3; x++) {
-		for (y=0; y<3; y++) {
-			(tileArray+x+(3*y))->pos.x = x;
-			(tileArray+x+(3*y))->pos.y = y;
-
-			(tileArray+x+(3*y))->def = malloc(sizeof(Def));
-			(tileArray+x+(3*y))->def->def = NULL;
-			if (x == 1 && y == 1) {
-				/* We're in the middle tile */
-				(tileArray+x+(3*y))->def->code[0] = '.';
-				(tileArray+x+(3*y))->def->code[1] = '.';
-
-				(tileArray+x+(3*y))->def->type = blankTile;
-
-				/* The middle is the only one that has a tile on all sides */
-				(tileArray+x+(3*y))->Left = tileArray+(x-1)+(3*y);
-				(tileArray+x+(3*y))->Right = tileArray+(x+2)+(3*(y));
-				(tileArray+x+(3*y))->Up = tileArray+(x)+(3*(y-1));
-				(tileArray+x+(3*y))->Down = tileArray+(x)+(3*(y+2));
-			} else {
-				/* We're not the middle */
-				(tileArray+x+(3*y))->def->code[0] = '0';
-				(tileArray+x+(3*y))->def->code[1] = '1';
-
-				(tileArray+x+(3*y))->def->type = floorTile;
-
-				(tileArray+x+(3*y))->Up = y==0? NULL: tileArray+(x)+(3*(y-1));
-				(tileArray+x+(3*y))->Down = y==2? NULL: tileArray+(x)+(3*(y+1));
-				(tileArray+x+(3*y))->Left = x==0? NULL: tileArray+(x-1)+(3*(y));
-				(tileArray+x+(3*y))->Right = x==2? NULL: tileArray+(x+1)+(3*(y));
-			}
+/* This function take in a two char array and returns the tile type with that code */
+TileType* getTileType(char* code) {
+	int x;
+	for (x = 0; x < NumTileTypes; x++) {
+		if (memcmp(tileTypes[x].code, code, 2) == 0) {
+			return(tileTypes+x);
 		}
 	}
-
-	return world;
+	return NULL;
 }

@@ -1,3 +1,5 @@
+#ifndef _MAP_H_
+#define _MAP_H_
 #include <gl.h>
 #include "chunk_string.h"
 
@@ -111,5 +113,6 @@ typedef struct World {
 /* This function initializes a lot of the constants used here */
 void initMap();
 
-/* This is a function that builds a quick test world */
-World* buildTestWorld();
+/* This function takes in the two letter code and returns the TileType you should use.*/
+TileType* getTileType(char*);
+#endif

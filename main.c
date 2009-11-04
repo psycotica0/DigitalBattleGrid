@@ -6,6 +6,7 @@
 #include "cam.h"
 #include "map.h"
 #include "constants.h"
+#include "buildMap.h"
 
 Camera mainCam;
 
@@ -35,7 +36,7 @@ void init() {
 	glEnable(GL_POLYGON_SMOOTH);
 	glDepthFunc(GL_LEQUAL);
 
-	testWorld = buildTestWorld();
+	testWorld = buildWorld(NULL);
 
 	/* Initialize Camera */
 	mainCam.x = 10;
