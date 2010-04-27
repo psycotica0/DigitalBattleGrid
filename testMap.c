@@ -1,3 +1,4 @@
+#include <string.h>
 #include "buildMap.h"
 
 World* buildWorld(FILE* file) {
