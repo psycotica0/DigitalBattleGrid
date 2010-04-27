@@ -3,6 +3,8 @@
 #include <gl.h>
 #include "chunk_string.h"
 
+struct Tile;
+
 /* The Tile Type is meant to be globally unique and static */
 /* There should be a single Tile Type for every Built In Tile Code */
 typedef struct TileType {
