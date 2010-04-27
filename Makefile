@@ -13,6 +13,10 @@ chunk_string.o: chunk_string.h chunk_string.c
 testMap.o: map.h buildMap.h testMap.c
 	gcc -c -o testMap.o testMap.c -I/System/Library/Frameworks/OpenGL.framework/Headers
 
-.PHONY: test
+.PHONY: test clean
 test: grid
 	./grid
+
+clean:
+	rm -f *.o
+	rm -f grid
