@@ -10,11 +10,10 @@
 
 Camera mainCam;
 
-
 /* This holds the call-list for the tile */
 GLuint tile;
 
-World* testWorld;
+World* theWorld;
 
 void viewPort(int width, int height) {
 	GLfloat ratio = (GLfloat) height / (GLfloat) width;
@@ -35,8 +34,6 @@ void init() {
 	glEnable(GL_LINE_SMOOTH);
 	glEnable(GL_POLYGON_SMOOTH);
 	glDepthFunc(GL_LEQUAL);
-
-	testWorld = buildWorld(NULL);
 
 	/* Initialize Camera */
 	mainCam.x = 10;
@@ -73,7 +70,7 @@ void Draw() {
 
 	UseCam(&mainCam);
 
-	renderWorld(testWorld);
+	renderWorld(theWorld);
 
 	SDL_GL_SwapBuffers();
 
@@ -100,6 +97,10 @@ int main(int argc, char* argv[]) {
 
 	SDL_WM_SetCaption("Battle Grid", "battlegrid");
 	init();
+
+	/* Build the world from Stdin */
+	theWorld = buildWorld(stdin);
+
 	viewPort(screen->w, screen->h);
 
 	while (!done) {
