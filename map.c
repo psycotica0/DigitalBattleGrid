@@ -9,6 +9,8 @@ TileType* floorTile = NULL;
 TileType* holeTile = NULL;
 TileType* blankTile = NULL;
 
+DefList* globalTileDefs;
+
 /* The following draws a square that is at y=0 in the x-z plane. */
 void flatRect(float x1, float z1, float x2, float z2) {
 	glVertex3f(x1, 0.0f, z1);
@@ -110,6 +112,28 @@ void initMap() {
 
 	blankTile->useCallList = 0;
 	blankTile->drawTile = &drawBlankTile;
+
+	/* Initialize Global Tile Definitions */
+	{
+		TileType* curType;
+		DefList* curDef;
+		int i;
+
+		globalTileDefs = malloc(sizeof(DefList) * NumTileTypes);
+		for (i=0; i < NumTileTypes; i++) {
+			curType = tileTypes + i;
+			curDef = globalTileDefs + i;
+
+			curDef->def = malloc(sizeof(Def));
+			memcpy(curDef->def->code ,curType->code, 2);
+			curDef->def->type = curType;
+			curDef->def->def = NULL;
+
+			if (i+1 < NumTileTypes) {
+				curDef->next = curDef+1;
+			}
+		}
+	}
 }
 
 void renderTile(Tile* tile) {
@@ -195,4 +219,260 @@ TileType* getTileType(char* code) {
 		}
 	}
 	return NULL;
+}
+
+/* This searches a def list to find the right def */
+Def* findFromDefList(DefList* list, char* code) {
+	while (list != NULL) {
+		if (strcmp(code, list->def->code) == 0) {
+			return list->def;
+		}
+		list = list->next;
+	}
+
+	return NULL;
+}
+
+/* This function takes in a two char array and returns the tile definition with that code from the room, or globally */
+Def* getTileDef(Room* room, char* code) {
+	DefList* newList;
+	Def* temp;
+	/* First check the global array */
+	temp = findFromDefList(globalTileDefs, code);
+
+	if (temp != NULL) {
+		return temp;
+	}
+
+	/* Now the room */
+	temp = findFromDefList(room->defList, code);
+	if (temp != NULL) {
+		return temp;
+	}
+
+	/* If we don't find one, we should create one for the local room and return it */
+	temp = malloc(sizeof(Def));
+	memcpy(temp->code, code, 2);
+	temp->def = NULL;
+	/* By default everything is a normal floor tile */
+	temp->type = floorTile;
+
+	/* Add the def to the room's list */
+	newList = malloc(sizeof(DefList));
+	newList->def = temp;
+	newList->next = room->defList;
+
+	room->defList = newList;
+
+	/* And return the new one */
+	return temp;
+}
+
+World* newWorld() {
+	World* world;
+
+	world = malloc(sizeof(World));
+	world->rooms = NULL;
+
+	return world;
+}
+
+Room* newRoom(World* world, int x, int y, int elevation, Metadata* metadata) {
+	RoomList* list;
+
+	/* Since it doesn't really matter, I've decided that since I'll only be adding rooms, I'll add to the front */
+	list = malloc(sizeof(RoomList));
+	list->next = world->rooms;
+	world->rooms = list;
+
+	list->value = malloc(sizeof(Room));
+	list->value->pos.x = x;
+	list->value->pos.y = y;
+	list->value->pos.elevation = elevation;
+	list->value->metadata = metadata;
+
+	list->value->defList = NULL;
+
+	list->value->map = malloc(sizeof(Map));
+	list->value->map->TopLeft = NULL;
+
+	return list->value;
+}
+
+Tile* getTile(Room* room, int x, int y) {
+	/* TODO: Use some kind of caching to speed this up huge for consecutive access */
+	Tile* tile = room->map->TopLeft;
+
+	for (; x > 0; x--) {
+		if (tile == NULL) {
+			return NULL;
+		}
+		tile = tile->Right;
+	}
+
+	for (; y > 0; y--) {
+		if (tile == NULL) {
+			return NULL;
+		}
+		tile = tile->Down;
+	}
+
+	return tile;
+}
+
+/* This function is used for when we mass allocate tiles to interconnect the blob */
+/* It uses sX and sY to use as starting co-ordinates */
+Tile* makeTileBlob(int width, int height, int sX, int sY) {
+	Tile* blob;
+	Tile* cur;
+	int i;
+
+	if (width <= 0 || height <= 0) {
+		return NULL;
+	}
+
+	blob = malloc(sizeof(Tile) * width * height);
+
+	for (i=0; i < width * height; i++) {
+		cur = blob + i;
+		/* All of these check if the given other thing exists, and otherwise it's NULL */
+		cur->Left = i%width == 0? NULL: blob + (i-1);
+		cur->Right = (i+1)%width == 0? NULL: blob + (i+1);
+		cur->Up = i < width? NULL: blob + (i-width);
+		cur->Down = i >= width*(height-1)? NULL: blob + (i+width);
+		/* Set the position */
+		cur->pos.x = (i % width) + sX;
+		cur->pos.y = (i / width) + sY;
+	}
+
+	return blob;
+}
+
+/* Join tile blobs left to right */
+/* Should have same height */
+/* Returns the new top left corner */
+Tile* joinTileLeftRight(Tile* left, Tile* right) {
+	Tile* curLeft = left;
+	Tile* curRight = right;
+
+	/* Edge Cases */
+	if (curLeft == NULL) return right;
+	if (curRight == NULL) return left;
+
+	/* Find right edge of left */
+	while (curLeft->Right != NULL) {
+		curLeft = curLeft->Right;
+	}
+
+	while (curLeft != NULL && curRight != NULL) {
+		curLeft->Right = curRight;
+		curRight->Left = curLeft;
+
+		curLeft = curLeft->Down;
+		curRight = curRight->Down;
+	}
+
+	return left;
+}
+
+/* Join tile blobs top to bottom */
+/* Should have same width */
+/* Returns new top left corner */
+Tile* joinTileTopBottom(Tile* top, Tile* bottom) {
+	Tile* curTop = top;
+	Tile* curBottom = bottom;
+
+	/* Edge Cases */
+	if (curTop == NULL) return bottom;
+	if (curBottom == NULL) return top;
+
+	/* Find bottom edge of top */
+	while (curTop->Down != NULL) {
+		curTop = curTop->Down;
+	}
+
+	while (curTop != NULL && curBottom != NULL) {
+		curTop->Down = curBottom;
+		curBottom->Up = curTop;
+
+		curTop = curTop->Right;
+		curBottom = curBottom->Right;
+	}
+
+	return top;
+}
+
+/* This gets the size of a blob. Just pass in addresses of the variables to store the values in */
+void getTileBlobSize(Tile* blob, int* width, int* height) {
+	Tile* cur = blob;
+	(*width) = 0;
+	(*height) = 0;
+
+	if (cur == NULL) return;
+
+	/* Compensate for the fact that we're comparing nexts, not currents */
+	(*width) = 1;
+	(*height) = 1;
+
+	while (!(cur->Down == NULL && cur->Right == NULL)) {
+		if (cur->Down != NULL) {
+			(*height)++;
+			cur = cur->Down;
+		}
+		if (cur->Right != NULL) {
+			(*width)++;
+			cur = cur->Right;
+		}
+	}
+}
+
+
+/* This function makes a room at least the given width, filling with '..' as needed */
+/* If the given width is less than or equal to the current width, nothing is done */
+/* Returns the top left */
+Tile* expandRoomWidth(Room* room, int width) {
+	Tile* tile = room->map->TopLeft;
+	int curWidth;
+	int curHeight;
+
+	getTileBlobSize(tile, &curWidth, &curHeight);
+
+	/* Special case for empty rooms */
+	curHeight = (curHeight == 0)? 1: curHeight;
+
+	return room->map->TopLeft = joinTileLeftRight(tile, makeTileBlob(width - curWidth, curHeight, curWidth, 0));
+}
+
+/* This function does the same thing as expandRoomWidth, but for height */
+Tile* expandRoomHeight(Room* room, int height) {
+	Tile* tile = room->map->TopLeft;
+	int curWidth;
+	int curHeight;
+
+	getTileBlobSize(tile, &curWidth, &curHeight);
+
+	/* Special case for empty rooms */
+	curWidth = (curWidth == 0)? 1: curWidth;
+
+	return room->map->TopLeft = joinTileTopBottom(tile, makeTileBlob(curWidth, height - curHeight, 0, curHeight));
+}
+
+
+/* This function makes a room the given size, filling it with ".." tiles as needed  */
+/* Returns the new bottom right tile */
+Tile* expandRoom(Room* room, int width, int height) {
+	expandRoomWidth(room, width);
+	return expandRoomHeight(room, height);
+}
+
+/* Wow, this ended up being really inefficient, I iterate over this room, like, 6 times, if I'm lucky */
+Tile* setTile(Room* room, int x, int y, char* code) {
+	Tile* tile;
+
+	expandRoom(room, x+1, y+1);
+	tile = getTile(room, x, y);
+
+	tile->def = getTileDef(room, code);
+
+	return tile;
 }
