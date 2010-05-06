@@ -10,6 +10,18 @@ map.o: map.c map.h chunk_string.h constants.h
 chunk_string.o: chunk_string.h chunk_string.c
 	gcc -c -o chunk_string.o chunk_string.c
 
+iniWorld.o: iniWorld.c buildMap.h map.h
+	gcc -c -o iniWorld.o iniWorld.c -I/System/Library/Frameworks/OpenGL.framework/Headers 
+
+iniWorld.yy.c: iniWorld.l map.h
+	lex -oiniWorld.yy.c iniWorld.l
+
+iniWorld.tab.c: iniWorld.y map.h
+	yacc -b iniWorld iniWorld.y
+
+testScan: iniWorld.yy.c
+	gcc -o testScan iniWorld.yy.c -lfl
+
 testMap.o: map.h buildMap.h testMap.c
 	gcc -c -o testMap.o testMap.c -I/System/Library/Frameworks/OpenGL.framework/Headers
 
