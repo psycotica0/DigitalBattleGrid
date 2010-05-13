@@ -8,7 +8,7 @@ World* buildWorld(FILE* file) {
 	int x,y;
 
 	world = newWorld();
-	room = newRoom(world, 0, 0, 0, NULL);
+	room = newRoom(world, "Test", 0, 0, 0, NULL);
 
 	for (x=0; x<3; x++) {
 		for (y=0; y<3; y++) {

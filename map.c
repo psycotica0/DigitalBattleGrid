@@ -277,7 +277,7 @@ World* newWorld() {
 	return world;
 }
 
-Room* newRoom(World* world, int x, int y, int elevation, Metadata* metadata) {
+Room* newRoom(World* world, char* ID, int x, int y, int elevation, Metadata* metadata) {
 	RoomList* list;
 
 	/* Since it doesn't really matter, I've decided that since I'll only be adding rooms, I'll add to the front */
@@ -286,6 +286,7 @@ Room* newRoom(World* world, int x, int y, int elevation, Metadata* metadata) {
 	world->rooms = list;
 
 	list->value = malloc(sizeof(Room));
+	list->value->ID = ID;
 	list->value->pos.x = x;
 	list->value->pos.y = y;
 	list->value->pos.elevation = elevation;

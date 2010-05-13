@@ -102,6 +102,7 @@ typedef struct Room {
 	struct Metadata* metadata;
 	struct RoomPos pos;
 	struct DefList* defList;
+	char* ID;
 	/* Like with TileDef, the call list is where we'll store the room prebuilt so we don't have to render it every time */
 	GLuint callList;
 } Room;
@@ -132,7 +133,7 @@ TileType* getTileType(char*);
 World* newWorld();
 
 /* This function allocates and initializes the room structure in the given world */
-Room* newRoom(World* world, int x, int y, int elevation, Metadata* metadata);
+Room* newRoom(World* world, char* ID, int x, int y, int elevation, Metadata* metadata);
 
 /* This function sets the tile at the given position in the room to that which is described by the given code */
 Tile* setTile(Room* room, int x, int y, char* code);
