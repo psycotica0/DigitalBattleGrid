@@ -82,8 +82,8 @@ typedef struct Map {
 
 /* This is a linked list of metadata name value pairs */
 typedef struct Metadata {
-	struct chunk_string* name;
-	struct chunk_string* value;
+	char* name;
+	char* value;
 
 	struct Metadata* next;
 } Metadata;
@@ -137,5 +137,24 @@ Room* newRoom(World* world, char* ID, int x, int y, int elevation, Metadata* met
 
 /* This function sets the tile at the given position in the room to that which is described by the given code */
 Tile* setTile(Room* room, int x, int y, char* code);
+
+/* This function finds the room with the given ID in the World */
+/* If no room exists with that ID, it returns NULL */
+Room* findRoom(World* world, char* ID);
+
+/* This function gets the room with the given ID from the World, and if it doesn't exist, returns a new one */
+Room* getRoom(World* world, char* ID);
+
+/* This function adds metadata to the room */
+/* If data with the given name exists, the value is changed to this value */
+Metadata* setMetadata(Room* room, char* name, char* value);
+
+/* This function returns the value of some metadata from the given room */
+/* If the metadata doesn't exist, this returns NULL. */
+/* No distinction is made between a value which is saved as NULL, and a non-existant name */
+Metadata* getMetadata(Room* room, char* name);
+
+/* This function sets a tile def for a room */
+Def* setTileDef(Room* room, char* code, char* function, char* arg, char* typeCode);
 
 #endif

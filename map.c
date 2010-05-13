@@ -477,3 +477,80 @@ Tile* setTile(Room* room, int x, int y, char* code) {
 
 	return tile;
 }
+
+/* This function finds the room with the given ID in the World */
+/* If no room exists with that ID, it returns NULL */
+Room* findRoom(World* world, char* ID) {
+	RoomList* list;
+	for (list = world->rooms; list != NULL; list = list->next) {
+		if (strcmp(list->value->ID, ID) == 0) {
+			return list->value;
+		}
+	}
+
+	return NULL;
+}
+
+/* This function gets the room with the given ID from the World, and if it doesn't exist, returns a new one */
+Room* getRoom(World* world, char* ID) {
+	Room* temp = findRoom(world, ID);
+	if (temp != NULL) {
+		return temp;
+	}
+
+	return newRoom(world, ID, 0, 0, 0, NULL);
+}
+
+/* This function adds metadata to the room */
+/* If data with the given name exists, the value is changed to this value */
+Metadata* setMetadata(Room* room, char* name, char* value) {
+	Metadata* temp;
+
+	if (strcmp(name, "elevation") == 0) {
+		/* This is the elevation, it's stored with the position */
+		room->pos.elevation = strtol(value, NULL, 10);
+	}
+
+	/* Find the metadata, if it exists */
+	temp = getMetadata(room, name);
+	if (temp != NULL) {
+		temp->value = value;
+		return temp;
+	}
+
+	/* Make a new entry */
+	temp = malloc(sizeof(Metadata));
+	temp->name = name;
+	temp->value = value;
+	temp->next = room->metadata;
+
+	room->metadata = temp->next;
+
+	return temp;
+}
+
+/* This function returns the metadata from the given room */
+/* If the metadata doesn't exist, this returns NULL. */
+Metadata* getMetadata(Room* room, char* name) {
+	Metadata* temp;
+
+	/* Find the metadata */
+	for (temp = room->metadata; temp != NULL; temp = temp->next) {
+		if (strcmp(temp->name, name) == 0) {
+			return temp;
+		}
+	}
+}
+
+/* This function sets a tile def for a room */
+Def* setTileDef(Room* room, char* code, char* function, char* arg, char* typeCode) {
+	Def* temp = getTileDef(room, code);
+
+	temp->type = getTileType(typeCode);
+
+	/* Don't really know how I'm going to handle functions yet, so ignore them */
+
+	return temp;
+}
+
+
