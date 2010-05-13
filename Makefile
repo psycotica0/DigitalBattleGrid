@@ -14,13 +14,20 @@ iniWorld.o: iniWorld.c buildMap.h map.h
 	gcc -c -o iniWorld.o iniWorld.c -I/System/Library/Frameworks/OpenGL.framework/Headers 
 
 iniWorld.yy.c: iniWorld.l map.h
-	lex -oiniWorld.yy.c iniWorld.l
+	lex -o iniWorld.yy.c iniWorld.l
 
 iniWorld.yy.o: iniWorld.yy.c
 	gcc -c -o iniWorld.yy.o iniWorld.yy.c -I/System/Library/Frameworks/OpenGL.framework/Headers 
 
 testMap.o: map.h buildMap.h testMap.c
 	gcc -c -o testMap.o testMap.c -I/System/Library/Frameworks/OpenGL.framework/Headers
+
+iniOutput.o: iniOutput.c outputMap.h
+	gcc -c -o iniOutput.o iniOutput.c -I/System/Library/Frameworks/OpenGL.framework/Headers
+
+testScan: iniWorld.o testScan.c buildMap.h map.o iniWorld.yy.o iniOutput.o
+	gcc -o testScan testScan.c iniWorld.o map.o iniWorld.yy.o iniOutput.o -I/System/Library/Frameworks/OpenGL.framework/Headers -L/System/Library/Frameworks/OpenGL.framework/Libraries -lgl
+
 
 .PHONY: test clean
 test: grid

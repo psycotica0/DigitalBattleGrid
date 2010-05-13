@@ -99,12 +99,8 @@ void initMap() {
 	memcpy(holeTile->code, "00", 2);
 	memcpy(blankTile->code, "..", 2);
 
-	floorTile->callList = glGenLists(1);
-	glNewList(floorTile->callList, GL_COMPILE);
 	floorTile->drawTile = &drawFloorTile;
-	floorTile->drawTile(NULL);
-	floorTile->useCallList = 1;
-	glEndList();
+	floorTile->useCallList = 0;
 
 	/* The holeTile is blank */
 	holeTile->useCallList = 0;
