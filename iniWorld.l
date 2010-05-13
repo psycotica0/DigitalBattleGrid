@@ -1,9 +1,17 @@
 %{
 #include <string.h>
 #include <stdio.h>
-#include "iniWorld.tab.h"
+#include "map.h"
 
-extern yylval;
+extern World* iniWorldWorld;
+
+int iniWorldX;
+int iniWorldY;
+Room* iniWorldCurrentRoom;
+
+int yywrap() {
+	return 1;
+}
 
 /* This function parses out the ID for a section, or returns NULL if there isn't one */
 char* getId(char* section) {
@@ -19,21 +27,98 @@ char* getId(char* section) {
 	}
 	return NULL;
 }
+
+/* This disects a definition like S2=Stitch(r1,S1):01 and, in this case, would return: */
+/*
+code = "S2"
+function = "Stitch"
+args = "r1,S1"
+repType = "01"
+
+and return 1
+*/
+/* If it decides that it is of an invalid format it could return 0 */
+/* Input could easily be mangled by this function */
+int getTileDefFields(char* input, char** code, char** function, char** args, char** repType) {
+	(*code) = strtok(input, " =");
+	(*function) = strtok(NULL, " (");
+	(*args) = strtok(NULL, ")");
+	(*repType) = strtok(NULL, " :");
+
+	return 1;
+}
+
+
+
 %}
 
+%s ROOM DEFS MAP
 %%
 
-[[]Room(\ [a-zA-Z0-9]*)?[]] yylval=srtdup(getId(yytext)); return ROOM;
-[[]Map(\ [a-zA-Z0-9]*)?[]] yylval=strdup(getId(yytext)); return MAP;
-[[]Defs(\ [a-zA-Z0-9]*)?[]] yylval=strdup(getId(yytext)); return DEFS;
+[[]Room(\ [a-zA-Z0-9]*)?[]] {
+	char* id = getId(yytext);
+	iniWorldCurrentRoom = getRoom(iniWorldWorld, id);
+	BEGIN ROOM;
+}
 
-[^=\n]*=[^\n:]*:[[:alnum:]]{2} yylval=strdup(yytext); return NAME_VALUE_REP;
+[[]Map(\ [a-zA-Z0-9]*)?[]] {
+	char* id = getId(yytext);
+	if (id != NULL) {
+		iniWorldCurrentRoom = getRoom(iniWorldWorld, id);
+	}
+	iniWorldX = 0;
+	iniWorldY = 0;
+	BEGIN MAP;
+}
 
-[^=\n]*=[^\n]* yylval=strdup(yytext); return NAME_VALUE;
+[[]Defs(\ [a-zA-Z0-9]*)?[]] {
+	char* id = getId(yytext);
+	if (id != NULL) {
+		iniWorldCurrentRoom = getRoom(iniWorldWorld, id);
+	}
+	BEGIN DEFS;
+}
 
-[[:alnum:].]{2} yylval=strdup(yytext); return CODE;
+<DEFS>[^=\n]*=[^\n:]*:[[:alnum:]]{2} | 
 
-\n+ return NEWLINE;
+<DEFS>[^=\n]*=[^\n]* {
+	char* code;
+	char* function;
+	char* args;
+	char* repType;
+
+	if (getTileDefFields(yytext, &code, &function, &args, &repType)) {
+		setTileDef(iniWorldCurrentRoom, code, function, args, repType);
+	}
+}
+
+
+<ROOM>[^=\n]*=[^\n]* {
+	char* name;
+	char* value;
+
+	value = strpbrk(yytext, "=");
+	(*value) = '\0';
+	value++;
+	name = yytext;
+
+	setMetadata(iniWorldCurrentRoom, name, value);
+}
+
+<MAP>[[:alnum:].]{2} {
+	setTile(iniWorldCurrentRoom, iniWorldX, iniWorldY, yytext);
+	iniWorldX++;
+}
+
+<MAP>\n+ {
+	if (iniWorldX != 0) {
+		/* If iniWorldX is still 0, then this is a blank line we're ending */
+		iniWorldX = 0;
+		iniWorldY++;
+	}
+}
+
+\n |
 [ ]* /* Ignore For Now */;
 
 %%

@@ -1,15 +1,16 @@
-#include <string.c>
+#include <string.h>
 #include "map.h"
+#include "buildMap.h"
+
+int yylex();
+extern FILE* yyin;
 
 World* iniWorldWorld;
-int iniWorldX;
-int iniWorldY;
-Room* iniWorldCurrentRoom;
 
 World* buildWorld(FILE* input) {
 	iniWorldWorld = newWorld();
 	yyin = input;
-	yyparse();
+	yylex();
 
 	return iniWorldWorld;
 }
