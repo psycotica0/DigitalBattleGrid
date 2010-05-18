@@ -88,7 +88,7 @@ int getTileDefFields(char* input, char** code, char** function, char** args, cha
 	char* repType;
 
 	if (getTileDefFields(yytext, &code, &function, &args, &repType)) {
-		setTileDef(iniWorldCurrentRoom, code, function, args, repType);
+		setTileDef(iniWorldWorld, iniWorldCurrentRoom, code, function, args, repType);
 	}
 }
 

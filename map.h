@@ -156,6 +156,6 @@ Metadata* setMetadata(Room* room, char* name, char* value);
 Metadata* getMetadata(Room* room, char* name);
 
 /* This function sets a tile def for a room */
-Def* setTileDef(Room* room, char* code, char* function, char* arg, char* typeCode);
+Def* setTileDef(World*, Room* room, char* code, char* function, char* arg, char* typeCode);
 
 #endif
