@@ -538,6 +538,81 @@ Metadata* getMetadata(Room* room, char* name) {
 	}
 }
 
+/* This function finds, in the given room, the tile with the given code */
+/* It will return the first one it finds */
+Tile* getTileByCode(Room* room, char code[2]) {
+	Tile* current = room->map->TopLeft;
+	int left = 0;
+
+	while (current != NULL) {
+		if (strncmp(current->def->code, code, 2) == 0) {
+			return current;
+		}
+
+		if (left) {
+			/* We're moving to the left */
+			if (current->Left == NULL) {
+				current = current->Down;
+				left = !left;
+			} else {
+				current = current->Left;
+			}
+		} else {
+			/* We're moving to the right */
+			if (current->Right == NULL) {
+				current = current->Down;
+				left = !left;
+			} else {
+				current = current->Right;
+			}
+		}
+	}
+
+	return NULL;
+}
+
+/* This function is the action to take for a Stitch tile on render */
+/* It expects the DefType->arg to be a room and tile */
+int stitchDefAction(Room* room, Tile* tile) {
+	Room* otherRoom;
+	Tile* otherTile;
+	int newX;
+	int newY;
+
+	otherRoom = tile->def->def->arg->roomTile.room;
+	otherTile = tile->def->def->arg->roomTile.tile;
+
+	newX = tile->pos.x - otherTile->pos.x;
+	newY = tile->pos.y - otherTile->pos.y;
+
+	if (tile->Left == NULL) {
+		/* Left Edge, subtract 1 more from X */
+		newX--;
+	} else if (tile->Right == NULL) {
+		/* Right Edge, add more to X */
+		newX++;
+	} else if (tile->Up == NULL) {
+		/* Top Edge, subtract 1 more from Y */
+		newY--;
+	} else if (tile->Down == NULL) {
+		newY++;
+	} else {
+		fputs("Must use Stitch only on an Edge\n", stderr);
+		return 1;
+	}
+
+	newX = room->pos.x + newX;
+	newY = room->pos.y + newY;
+
+	otherRoom->pos.x = newX;
+	otherRoom->pos.y = newY;
+
+	/* Return 1 to tell the function that we haven't done any rendering */
+	return 1;
+}
+
+
+
 /* This function sets a tile def for a room */
 Def* setTileDef(World* world, Room* room, char* code, char* function, char* arg, char* typeCode) {
 	Def* temp = getTileDef(room, code);
@@ -545,8 +620,24 @@ Def* setTileDef(World* world, Room* room, char* code, char* function, char* arg,
 	temp->type = getTileType(typeCode);
 
 	/* Don't really know how I'm going to handle functions yet, so ignore them */
+	if (strcmp(function, "Stitch") == 0) {
+		char* roomCode;
+		char* tileCode;
+
+		temp->def = malloc(sizeof(DefType));
+		temp->def->defAction = &stitchDefAction;
+
+		roomCode = arg + strspn(arg, " ");
+		tileCode = strpbrk(roomCode, " ,");
+		(*tileCode) ='\0';
+		tileCode++;
+		tileCode = tileCode + strspn(tileCode, " ,");
+
+		temp->def->arg = malloc(sizeof(IntOrTile));
+		temp->def->arg->roomTile.room = getRoom(world, roomCode);
+		temp->def->arg->roomTile.tile = getTileByCode(temp->def->arg->roomTile.room, tileCode);
+	}
 
 	return temp;
 }
-
 
