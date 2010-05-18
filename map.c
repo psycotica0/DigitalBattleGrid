@@ -24,7 +24,7 @@ void flatSquare(float length) {
 	flatRect(-(length/2), -(length/2), length/2, length/2);
 }
 
-void drawFloorTile(Tile* tile) {
+void drawFloorTile(Room* room, Tile* tile) {
 	glBegin(GL_QUADS);
 
 	/* The Tile body */
@@ -44,13 +44,13 @@ void drawFloorTile(Tile* tile) {
 	glEnd();
 }
 
-void drawBlankTile(Tile* tile) {
+void drawBlankTile(Room* room, Tile* tile) {
 	/* If the tile is NULL (an edge) or is of a type that starts with '.' then don't draw the wall */
 	if (tile->Left != NULL && tile->Left->def->type->code[0] != '.') {
 		glPushMatrix();
 		glTranslatef(-((tileSize/2) + edgeSize), (tileSize/2) + edgeSize, 0);
 		glRotatef(90, 0, 0, -1);
-		drawFloorTile(tile);
+		drawFloorTile(room, tile);
 		glPopMatrix();
 	}
 
@@ -58,7 +58,7 @@ void drawBlankTile(Tile* tile) {
 		glPushMatrix();
 		glTranslatef(((tileSize/2) + edgeSize), (tileSize/2) + edgeSize, 0);
 		glRotatef(90, 0, 0, 1);
-		drawFloorTile(tile);
+		drawFloorTile(room, tile);
 		glPopMatrix();
 	}
 
@@ -66,7 +66,7 @@ void drawBlankTile(Tile* tile) {
 		glPushMatrix();
 		glTranslatef(0, (tileSize/2) + edgeSize, -((tileSize/2) + edgeSize));
 		glRotatef(90, -1, 0, 0);
-		drawFloorTile(tile);
+		drawFloorTile(room, tile);
 		glPopMatrix();
 	}
 
@@ -74,7 +74,7 @@ void drawBlankTile(Tile* tile) {
 		glPushMatrix();
 		glTranslatef(0, (tileSize/2) + edgeSize, ((tileSize/2) + edgeSize));
 		glRotatef(90, 1, 0, 0);
-		drawFloorTile(tile);
+		drawFloorTile(room, tile);
 		glPopMatrix();
 	}
 
@@ -132,7 +132,7 @@ void initMap() {
 	}
 }
 
-void renderTile(Tile* tile) {
+void renderTile(Room* room, Tile* tile) {
 	/* Store the current state */
 	glPushMatrix();
 
@@ -140,7 +140,7 @@ void renderTile(Tile* tile) {
 	glTranslatef(squaresToUnits(tile->pos.x), 0, squaresToUnits(tile->pos.y));
 
 	if (tile->def->def && tile->def->def->defAction) {
-		if (tile->def->def->defAction(tile) == 0) {
+		if (tile->def->def->defAction(room, tile) == 0) {
 			/* The function returned 0, it's assumed that any rendering has been done by that function */
 			/* Restore the matrix from before */
 			glPopMatrix();
@@ -153,7 +153,7 @@ void renderTile(Tile* tile) {
 	} else {
 		/* If drawTile is NULL, then just don't draw */
 		if (tile->def->type->drawTile) {
-			tile->def->type->drawTile(tile);
+			tile->def->type->drawTile(room, tile);
 		}
 	}
 
@@ -175,7 +175,7 @@ void renderRoom(Room* room) {
 
 	/* Go through all tiles */
 	while (current != NULL) {
-		renderTile(current);
+		renderTile(room, current);
 		if (left) {
 			if (current->Left == NULL) {
 				current = current->Down;
