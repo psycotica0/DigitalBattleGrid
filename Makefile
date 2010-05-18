@@ -14,7 +14,7 @@ iniWorld.o: iniWorld.c buildMap.h map.h
 	gcc -c -o iniWorld.o iniWorld.c -I/System/Library/Frameworks/OpenGL.framework/Headers 
 
 iniWorld.yy.c: iniWorld.l map.h
-	lex -o iniWorld.yy.c iniWorld.l
+	lex -oiniWorld.yy.c iniWorld.l
 
 iniWorld.yy.o: iniWorld.yy.c
 	gcc -c -o iniWorld.yy.o iniWorld.yy.c -I/System/Library/Frameworks/OpenGL.framework/Headers 
