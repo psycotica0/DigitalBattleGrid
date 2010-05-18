@@ -46,7 +46,7 @@ void drawFloorTile(Tile* tile) {
 
 void drawBlankTile(Tile* tile) {
 	/* If the tile is NULL (an edge) or is of a type that starts with '.' then don't draw the wall */
-	if (tile->Left != NULL || tile->Left->def->type->code[0] != '.') {
+	if (tile->Left != NULL && tile->Left->def->type->code[0] != '.') {
 		glPushMatrix();
 		glTranslatef(-((tileSize/2) + edgeSize), (tileSize/2) + edgeSize, 0);
 		glRotatef(90, 0, 0, -1);
@@ -54,7 +54,7 @@ void drawBlankTile(Tile* tile) {
 		glPopMatrix();
 	}
 
-	if (tile->Right != NULL || tile->Right->def->type->code[0] != '.') {
+	if (tile->Right != NULL && tile->Right->def->type->code[0] != '.') {
 		glPushMatrix();
 		glTranslatef(((tileSize/2) + edgeSize), (tileSize/2) + edgeSize, 0);
 		glRotatef(90, 0, 0, 1);
@@ -62,7 +62,7 @@ void drawBlankTile(Tile* tile) {
 		glPopMatrix();
 	}
 
-	if (tile->Up != NULL || tile->Up->def->type->code[0] != '.') {
+	if (tile->Up != NULL && tile->Up->def->type->code[0] != '.') {
 		glPushMatrix();
 		glTranslatef(0, (tileSize/2) + edgeSize, -((tileSize/2) + edgeSize));
 		glRotatef(90, -1, 0, 0);
@@ -70,7 +70,7 @@ void drawBlankTile(Tile* tile) {
 		glPopMatrix();
 	}
 
-	if (tile->Down != NULL || tile->Down->def->type->code[0] != '.') {
+	if (tile->Down != NULL && tile->Down->def->type->code[0] != '.') {
 		glPushMatrix();
 		glTranslatef(0, (tileSize/2) + edgeSize, ((tileSize/2) + edgeSize));
 		glRotatef(90, 1, 0, 0);
