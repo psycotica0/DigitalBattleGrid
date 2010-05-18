@@ -1,5 +1,5 @@
-grid: main.c cam.h cam.o map.h map.o chunk_string.o constants.h buildMap.h testMap.o Makefile
-	gcc -o grid main.c cam.o chunk_string.o map.o testMap.o -I/System/Library/Frameworks/OpenGL.framework/Headers -L/System/Library/Frameworks/OpenGL.framework/Libraries -lgl `sdl-config --libs`
+grid: main.c cam.h cam.o map.h map.o chunk_string.o constants.h buildMap.h iniWorld.o iniWorld.yy.o Makefile
+	gcc -o grid main.c cam.o chunk_string.o map.o iniWorld.o iniWorld.yy.o -I/System/Library/Frameworks/OpenGL.framework/Headers -L/System/Library/Frameworks/OpenGL.framework/Libraries -lgl `sdl-config --libs`
 
 cam.o: cam.c cam.h
 	gcc -c -o cam.o cam.c -I/System/Library/Frameworks/OpenGL.framework/Headers
