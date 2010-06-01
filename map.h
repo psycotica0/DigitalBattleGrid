@@ -106,6 +106,9 @@ typedef struct Room {
 	char* ID;
 	/* Like with TileDef, the call list is where we'll store the room prebuilt so we don't have to render it every time */
 	GLuint callList;
+	/* This is a list (Going Left to Right) of all tiles which have been referenced, but not yet placed in the map */
+	/* This is so that one can reference a tile in a definition before that room's map is read */
+	struct Tile* undefinedTiles;
 } Room;
 
 /* This is a linked list for rooms */

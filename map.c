@@ -293,6 +293,8 @@ Room* newRoom(World* world, char* ID, int x, int y, int elevation, Metadata* met
 	list->value->map = malloc(sizeof(Map));
 	list->value->map->TopLeft = NULL;
 
+	list->value->undefinedTiles = NULL;
+
 	return list->value;
 }
 
@@ -462,14 +464,56 @@ Tile* expandRoom(Room* room, int width, int height) {
 	return expandRoomHeight(room, height);
 }
 
+/* Definitions */
+Tile* findPreCreatedTile(Room*, char*);
+Tile* insertPreCreatedTile(Room*, Tile*);
+Tile* removePreCreatedTile(Room*, Tile*);
+Tile* preCreateTile(Room*, char*);
+
+/* This function replaces one Tile object with another */
+/* It doesn't copy over the tile's def, but does stitch it into the map, and copies over it's position */
+/* It returns the replacement tile. The original tile could be discarded, but might not be safe to free */
+Tile* replaceTile(Room* room, Tile* original, Tile* replacement) {
+
+	replacement->Up = original->Up;
+	replacement->Right = original->Right;
+	replacement->Down = original->Down;
+	replacement->Left = original->Left;
+
+	if (replacement->Up != NULL) replacement->Up->Down = replacement;
+	if (replacement->Right != NULL) replacement->Right->Left = replacement;
+	if (replacement->Down != NULL) replacement->Down->Up = replacement;
+	if (replacement->Left != NULL) replacement->Left->Right = replacement;
+
+	if (replacement->Up == NULL && replacement->Left == NULL) {
+		/* Top Left corner: Update the Map */
+		room->map->TopLeft = replacement;
+	}
+
+	replacement->pos.x = original->pos.x;
+	replacement->pos.y = original->pos.y;
+
+	return replacement;
+}
+
 /* Wow, this ended up being really inefficient, I iterate over this room, like, 6 times, if I'm lucky */
 Tile* setTile(Room* room, int x, int y, char* code) {
 	Tile* tile;
+	Tile* preCreated;
 
 	expandRoom(room, x+1, y+1);
 	tile = getTile(room, x, y);
 
-	tile->def = getTileDef(room, code);
+	preCreated = findPreCreatedTile(room, code);
+	if (preCreated != NULL) {
+		/* We've got this tile created already, so we'll just patch it in. */
+		/* First, take it out of the undefinedTiles list */
+		removePreCreatedTile(room, preCreated);
+		/* So far as I know, I can't free this tile, and instead must leak it, because I may have allocated it in a bulk block */
+		tile = replaceTile(room, tile, preCreated);
+	} else {
+		tile->def = getTileDef(room, code);
+	}
 
 	return tile;
 }
@@ -540,6 +584,7 @@ Metadata* getMetadata(Room* room, char* name) {
 
 /* This function finds, in the given room, the tile with the given code */
 /* It will return the first one it finds */
+/* If it can't find a tile of that type, it will pre-create one and return it to you */
 Tile* getTileByCode(Room* room, char code[2]) {
 	Tile* current = room->map->TopLeft;
 	int left = 0;
@@ -568,7 +613,12 @@ Tile* getTileByCode(Room* room, char code[2]) {
 		}
 	}
 
-	return NULL;
+	current = findPreCreatedTile(room, code);
+	if (current == NULL) {
+		return preCreateTile(room, code);
+	}
+
+	return current;
 }
 
 /* This function is the action to take for a Stitch tile on render */
@@ -611,7 +661,75 @@ int stitchDefAction(Room* room, Tile* tile) {
 	return 1;
 }
 
+/* This function inspects the given room's undefinedTiles list for the given tile, and if it exist, returns it. */
+/* If the tile doesn't exist, this returns NULL */
+Tile* findPreCreatedTile(Room* room, char* code) {
+	Tile* current = room->undefinedTiles;
 
+	while (current != NULL) {
+		if (strncmp(current->def->code, code, 2) == 0) {
+			return current;
+		}
+
+		current = current->Right;
+	}
+
+	return NULL;
+}
+
+/* This function inserts a Tile into the undefinedTiles list */
+Tile* insertPreCreatedTile(Room* room, Tile* tile) {
+	if (room->undefinedTiles == NULL) {
+		tile->Right = NULL;
+		tile->Left = NULL;
+	} else {
+		tile->Right = room->undefinedTiles;
+		tile->Left = tile->Right->Left;
+	}
+
+	room->undefinedTiles = tile;
+	return tile;
+}
+
+/* This function removes a Tile from the undefinedTiles list */
+Tile* removePreCreatedTile(Room* room, Tile* tile) {
+
+	if (tile->Left == NULL && tile->Right == NULL) {
+		/* Only item in the list */
+		room->undefinedTiles = NULL;
+	} else if (tile->Left == NULL) {
+		/* First item in the list */
+		tile->Right->Left = NULL;
+		room->undefinedTiles = tile->Right;
+	} else if (tile->Right == NULL) {
+		/* Last item in list */
+		tile->Left->Right = NULL;
+	} else {
+		tile->Right->Left = tile->Left;
+		tile->Left->Right = tile->Right;
+	}
+
+	return tile;
+}
+
+/* This function "pre-creates" a tile from an otherwise empty room */
+/* That is, it makes a stub tile containing just the tile code and adds it to the undefinedTile list. */
+/* Then, when a tile is added to a room, it is expected that this list will be consulted first for pre-created tiles */
+/* This allows tiles to be referenced before they are created in a map */
+Tile* preCreateTile(Room* room, char* code) {
+	Tile* temp;
+
+	temp = findPreCreatedTile(room, code);
+	if (temp != NULL) {
+		return temp;
+	}
+
+	temp = malloc(sizeof(Tile));
+	temp->def = getTileDef(room, code);
+	insertPreCreatedTile(room, temp);
+
+	return temp;
+}
 
 /* This function sets a tile def for a room */
 Def* setTileDef(World* world, Room* room, char* code, char* function, char* arg, char* typeCode) {
