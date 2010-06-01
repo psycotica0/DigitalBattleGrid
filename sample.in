@@ -1,0 +1,39 @@
+[Room hw]
+Name=Hallway
+Elevation=0
+
+[Map]
+.. .. 01 .. ..
+S1 01 01 01 S2
+.. .. 00 .. ..
+
+[Defs]
+S1=Stitch(r1,S1):01
+S2=Stitch(r2,S2):01
+
+[Room r1]
+Name=Room 1
+Elevation=0
+
+[Map]
+00 00 00 00 00
+00 01 01 01 00
+00 01 00 01 S1
+00 01 01 01 00
+00 00 00 00 00
+
+[Defs]
+S1=Stitch(hw,S1):01
+
+[Room r2]
+Name=Room 2
+Elevation=-5
+
+[Map]
+00 .. 00 .. 00
+S2 00 01 01 ..
+01 01 01 .. 01
+.. 00 01 01 01
+
+[Defs]
+S2=Stitch(hw,S2):01

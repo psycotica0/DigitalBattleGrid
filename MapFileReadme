@@ -1,0 +1,195 @@
+This is inteded to document the map file's format.
+Note that the map file is not intended to contain state, only the world.
+
+State should be contained in the state file.
+For example, the map file might define a stop square, or a door, or other tiles of interest.
+It is in the state file, though, where it is stored whether a stop square is active, or a door is open.
+
+A sample input file should be available in a sample.in file.
+
+The input file isn't intended to place any specific rules on indentation, nor blank lines.
+Any line that starts with ';' is intended to be a comment, and all text up to the end of the line is ignored.
+
+The map file works by defining rooms, the properties of those rooms, the layout of the room, and then definitions of special tiles in that layout.
+
+The first heading is '[Room ID]'.
+In this case id should be a unique identifier for this room.
+It is expected to be a single collection of alphanumeric characters with no spaces.
+For the map author's convenience it should be important somehow, but it doesn't have to be.
+
+Examples:
+[Room Room1]
+[Room 1]
+[Room r1]
+[Room fdsfdsewirjioewu8934543fsd]
+[Room theDrawingRoom]
+[Room thePlaceWhereTheKeyIsHidden]
+
+In the Room section are properties of that room.
+
+Each property name is defined as '^\s*([^=]*?)\s*='.
+That is, everything up to the first equal sign, ignoring inital whitespace or whitespace before the equal sign.
+The value is defined as '^[^=]*=\s*([^\n]*?)\s*\n'.
+That is, everything after the first equal sign to the end of the line, with the whitespace trimmed off the start and end.
+
+It's really up to the renderer which data they use, but some examples may be:
+Name: A human readable, or author helpful, name for the room.
+	Maybe "The Drawing Room" or "The King's Bedchamber".
+	If nothing comes to mind, perhaps even "The Room on the Left"
+Comment: This is a short description, like Name, but should only be shown to the DM.
+	For example: "The room they get ambushed in" or "Remember the hidden door in here"
+Elevation: This is the relative elevation, in feet, of the room.
+	I say relative because it doesn't need to be feet above sea-level or anything, it's just used to position one room relative to another.
+
+
+The next section is '[Map ID]'.
+This defines the layout of the room given by ID.
+If no ID is given, it's assumed to be the last room defined.
+
+The map is a two dimensional array of two-character codes.
+Each line is assumed to be a row, and spaces separate columns.
+
+The basic tileset is given below:
+.. This represents blank space.
+00 This represents a hole.
+01 This is a normal floor tile.
+02 This is tile that's considered difficult terrain.
+03 This is a 1ft raised tile, intended to represent a small raised dias, platform, or the like.
+13 This is a 1ft lowered tile, intended to represent a small dip, like a pool or fountian.
+04 This is a 3ft raised tile, intended to represent raised areas, like desks, tables, or altars. 
+05 This is a ceiling high tile, intended to represent pillars, or statues, or other insurmountable objects / areas.
+06 This is an upwards staircase tile, 5 ft tall at the top.
+16 This is a downwards staircase tile, 5 ft deep at the bottom.
+07 This is a door or other portal.
+
+Any tile who's code doesn't begin with 0, '.', or 1 is considered a special tile.
+A definition of this tile is expected to appear in the 'Defs' section for this room.
+
+The difference between a blank space and a hole can be somewhat renderer specific.
+In general it's assumed that separating a blank space and a normal space should be a wall, but nothing should separate a normal space and a hole space.
+
+For example:
+01 01 01
+01 .. 01
+01 01 01
+
+Is a Torus room with 8 floor tiles and a walled square in the middle.
+
+01 01 01
+01 00 01
+01 01 01
+
+On the other hand is a 3x3 square room with a hole in the center of it.
+
+The world should be rendered as though the defined map is surrounded by '..'.
+That is, '01 01 01' should be three tiles and walls should surround the set.
+
+If you want there to not be walls, you have to specifically line the map with '00'.
+So:
+00 00 00 00
+00 01 01 01
+00 00 00 00
+Has a wall at the right edge of the right-most '01' tile, but all other directions are unbound and thus lead off to infinity.
+
+Note that this is kind of a special case.
+Normally there should be a wall between '00' and '..'
+By that I mean that:
+01 01 01
+and 
+.. .. .. .. ..
+.. 01 01 01 ..
+.. .. .. .. ..
+Should render to the same thing, but
+00 00 00 00 00
+00 01 01 01 00
+00 00 00 00 00
+Represents three tiles floating in space and
+.. .. .. .. .. .. ..
+.. 00 00 00 00 00 ..
+.. 00 01 01 01 00 ..
+.. 00 00 00 00 00 ..
+.. .. .. .. .. .. ..
+Represents three tiles surrounded by holes, but ultimately walls beyond those.
+Like a trench or moat.
+Three tiles in a room, surrounded by holes.
+
+It should be assumed that it's up to the renderer to find orientations of some of the tiles that need it.
+For example, the door tiles should be aligned parallel to walls or edges.
+Stairs should align their edges to connect to higher (Or lower) elevations, or the edge if connected to the edge of a map.
+If they can't find a sensible alignment it is undefined here which alignment it'll choose.
+
+
+The next section is '[Defs ID]'.
+In this area the special codes put in the [Map] section for this room are defined to say what they mean.
+This is of the form "CODE=VALUE[:TILE]" (Where the square brackets mean that ":tile" is optional.)
+
+For example:
+[Map]
+01 T1 01
+[Defs]
+T1=StopSquare(1):02
+
+In the map section it is shown which square in the layout is T1.
+The code can be used multiple times in a map, with each of those tiles described by the same def.
+The same code appearing in two different maps don't share the same def.
+Of course, if you'd like them to, you can type the same def in for both of them.
+
+The optional section after the ':' gives the tile to represent this special tile with.
+This may or may not be used depending on the def, and a warning could be given if it is given but not used.
+If the def type does use the representational tile and one isn't given it should default to 01. A warning can be given here as well.
+
+Again, the list of available defs is mostly dependent on the renderer.
+Some examples though are as follows:
+Stitch(ID,TileCode):01 This tile can only be placed on the edge of a map.
+	It's used to define that this edge of this tile should be attached to the edge of the given TileCode of the Room described by ID.
+	It's expected that the named TileCode of the other Room should be a stitch back to this tile, but may not be strictly necessary.
+	Behaviour is undefined if the named stitch point stitches in turn to different tile.
+		Example:
+		[Map r1]
+		01 01 S1
+		[Defs r1]
+		S1=Stitch(r1,S2):02
+		[Map r2]
+		S2 01 01
+		[Defs r2]
+		S2=Stitch(r1,S1):02
+
+		Note the the tiles are not linked as the same tile, they're marked to share an edge.
+		That is, the resultant map is '01 01 02 02 01 01', not '01 01 02 01 01'
+Elevation(Height):01
+	This tile, described by 01, is raised by a custom elevation in feet (relative to the elevation of the room).
+	So, if the room is at Elevation 100, and this tile is at Elevation(5):01, then it will look like a 01 tile, but be 5ft higher than the regular tiles.
+StopSquare(StopID):01
+	This tile, described by 01, is a stop square.
+	Stop Squares are tiles that must be addressed before they can be passed through.
+	These might represent traps, or NPC conversations, or anything else it's useful for the character's movement to be held, or interrupted, on.
+	The StopID is a global ID that is used to connect the activation state of the StopSquare.
+	It's global across all rooms, and any squares that share the same StopID are activated or deactivated together.
+Origin(ID,TileCode):01 
+	This square is set to occupy the same 2d position as the named tile of the room described by ID.
+	This is mostly used to describe the spacial relationship between two rooms that may be at different elevations.
+	If the rooms are not at different elvations then the maps may be "merged", or errors may occur, depending on the renderer.
+	If they aren't, though, the maps should be placed above one another.
+	Unlike Stitch, the given TileCode could name another Origin for another room, and end up with a three tiered arrangement.
+		Example:
+		[Room r1]
+		Elevation=0
+		[Map r1]
+		01 01 01
+		01 L1 01
+		01 01 01
+		[Defs r1]
+		L1=Origin(r2,L0):01
+		[Room r2]
+		Elevation=10
+		[Map r2]
+		01 01 01
+		01 L0 01
+		01 01 01
+		[Defs r2]
+		L0=Origin(r2,L1):00
+
+		Defines one room(r2) 10 feet above with a hole in the middle that drops down to a second room(r1)
+Normal:01
+	This tile, described by 01, is a normal square.
+	The only reason to use this, rather than 01, is to define a square as special for something else.
