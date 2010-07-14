@@ -28,7 +28,7 @@ void viewPort(int width, int height) {
 
 void init() {
 	initMap();
-	glShadeModel(GL_SMOOTH);
+	glShadeModel(GL_FLAT);
 	glClearColor(0.43f, 0.16f, 0.38f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_LINE_SMOOTH);
