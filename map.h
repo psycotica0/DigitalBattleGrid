@@ -10,8 +10,9 @@ struct Room;
 /* There should be a single Tile Type for every Built In Tile Code */
 typedef struct TileType {
 	char code[2]; /* This is the two letter code used to make this tile */
-	/* This is the function used to draw the tile of this type */
-	void (*drawTile)(struct Room*, struct Tile*);
+	/* These are the functions used to draw the tile of this type */
+	void (*drawTileFront)(struct Room*, struct Tile*);
+	void (*drawTileRear) (struct Room*, struct Tile*);
 	/* This is a boolean that stores whether or not the callList should be used for this tile instead of calling drawTile */
 	/* This is because some tiles are always drawn the same, and others are different depending on the circumstance */
 	int useCallList;

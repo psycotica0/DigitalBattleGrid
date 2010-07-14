@@ -9,14 +9,33 @@ TileType* floorTile = NULL;
 TileType* holeTile = NULL;
 TileType* blankTile = NULL;
 
+#define FrontTileAlpha 1.0f
+#define BackTileAlpha 0.6f
+
 DefList* globalTileDefs;
 
-/* The following draws a square that is at y=0 in the x-z plane. */
+/* The following draws a square that is at y=0 in the x-z plane with the normal in the direction of the y axis. */
 void flatRect(float x1, float z1, float x2, float z2) {
+	/* First I swap x's and z's so x1 and z1 are the lowest, and x2 and z2 are the higher */
+	/* This allows me to guarantee which order the verticies go in, so I can guarantee which face is up */
+	if (x1 > x2) {
+		/* Swapy Trick */
+		x1 = x1 + x2;
+		x2 = x1 - x2;
+		x1 = x1 - x2;
+	}
+	if (z1 > z2) {
+		/* Swapy Trick */
+		z1 = z1 + z2;
+		z2 = z1 - z2;
+		z1 = z1 - z2;
+	}
+
+	/* Go in counter-clockwise order. */
 	glVertex3f(x1, 0.0f, z1);
-	glVertex3f(x2, 0.0f, z1);
-	glVertex3f(x2, 0.0f, z2);
 	glVertex3f(x1, 0.0f, z2);
+	glVertex3f(x2, 0.0f, z2);
+	glVertex3f(x2, 0.0f, z1);
 }
 
 /* This function makes a square centred around the current position, also at y=0 in x-z plane. */
@@ -24,15 +43,15 @@ void flatSquare(float length) {
 	flatRect(-(length/2), -(length/2), length/2, length/2);
 }
 
-void drawFloorTile(Room* room, Tile* tile) {
+void drawFloorTile(Room* room, Tile* tile, float alpha) {
 	glBegin(GL_QUADS);
 
 	/* The Tile body */
-	glColor3f(1.0f,1.0f,1.0f);
+	glColor4f(1.0f,1.0f,1.0f,alpha);
 	flatSquare(tileSize);
 
 	/* The Edges */
-	glColor3f(0.0f, 0.0f, 0.0f);
+	glColor4f(0.0f, 0.0f, 0.0f, alpha);
 	/* Back Edge */
 	flatRect(-(tileSize/2), -(tileSize/2), ((tileSize/2) + edgeSize), -((tileSize/2) + edgeSize));
 	/* Right Edge */
@@ -44,21 +63,35 @@ void drawFloorTile(Room* room, Tile* tile) {
 	glEnd();
 }
 
-void drawBlankTile(Room* room, Tile* tile) {
+void drawFloorTileFront(Room* room, Tile* tile) {
+	/* Only draw the front */
+	glPolygonMode(GL_BACK, GL_POINT);
+	glPolygonMode(GL_FRONT, GL_FILL);
+	drawFloorTile(room, tile, FrontTileAlpha);
+}
+
+void drawFloorTileRear(Room* room, Tile* tile) {
+	/* Only draw the back */
+	glPolygonMode(GL_FRONT, GL_POINT);
+	glPolygonMode(GL_BACK, GL_FILL);
+	drawFloorTile(room, tile, BackTileAlpha);
+}
+
+void drawBlankTile(Room* room, Tile* tile, float alpha) {
 	/* If the tile is NULL (an edge) or is of a type that starts with '.' then don't draw the wall */
 	if (tile->Left != NULL && tile->Left->def->type->code[0] != '.') {
 		glPushMatrix();
 		glTranslatef(-((tileSize/2) + edgeSize), (tileSize/2) + edgeSize, 0);
-		glRotatef(90, 0, 0, -1);
-		drawFloorTile(room, tile);
+		glRotatef(90, 0, 0, 1);
+		drawFloorTile(room, tile, alpha);
 		glPopMatrix();
 	}
 
 	if (tile->Right != NULL && tile->Right->def->type->code[0] != '.') {
 		glPushMatrix();
 		glTranslatef(((tileSize/2) + edgeSize), (tileSize/2) + edgeSize, 0);
-		glRotatef(90, 0, 0, 1);
-		drawFloorTile(room, tile);
+		glRotatef(90, 0, 0, -1);
+		drawFloorTile(room, tile, alpha);
 		glPopMatrix();
 	}
 
@@ -66,7 +99,7 @@ void drawBlankTile(Room* room, Tile* tile) {
 		glPushMatrix();
 		glTranslatef(0, (tileSize/2) + edgeSize, -((tileSize/2) + edgeSize));
 		glRotatef(90, -1, 0, 0);
-		drawFloorTile(room, tile);
+		drawFloorTile(room, tile, alpha);
 		glPopMatrix();
 	}
 
@@ -74,17 +107,31 @@ void drawBlankTile(Room* room, Tile* tile) {
 		glPushMatrix();
 		glTranslatef(0, (tileSize/2) + edgeSize, ((tileSize/2) + edgeSize));
 		glRotatef(90, 1, 0, 0);
-		drawFloorTile(room, tile);
+		drawFloorTile(room, tile, alpha);
 		glPopMatrix();
 	}
 
 	glPushMatrix();
 	glTranslatef(0.0f, tileSize + (2*edgeSize), 0.0f);
 	glBegin(GL_QUADS);
-	glColor3f(0.0f, 0.0f, 0.0f);
+	glColor4f(0.0f, 0.0f, 0.0f, alpha);
 	flatSquare(tileSize + (2*edgeSize));
 	glEnd();
 	glPopMatrix();
+}
+
+void drawBlankTileFront(Room* room, Tile* tile) {
+	/* Only draw the front */
+	glPolygonMode(GL_BACK, GL_POINT);
+	glPolygonMode(GL_FRONT, GL_FILL);
+	drawBlankTile(room, tile, FrontTileAlpha);
+}
+
+void drawBlankTileRear(Room* room, Tile* tile) {
+	/* Only draw the back */
+	glPolygonMode(GL_FRONT, GL_POINT);
+	glPolygonMode(GL_BACK, GL_FILL);
+	drawBlankTile(room, tile, BackTileAlpha);
 }
 
 void initMap() {
@@ -99,15 +146,18 @@ void initMap() {
 	memcpy(holeTile->code, "00", 2);
 	memcpy(blankTile->code, "..", 2);
 
-	floorTile->drawTile = &drawFloorTile;
+	floorTile->drawTileFront = &drawFloorTileFront;
+	floorTile->drawTileRear = &drawFloorTileRear;
 	floorTile->useCallList = 0;
 
 	/* The holeTile is blank */
 	holeTile->useCallList = 0;
-	holeTile->drawTile = NULL;
+	holeTile->drawTileFront = NULL;
+	holeTile->drawTileRear = NULL;
 
 	blankTile->useCallList = 0;
-	blankTile->drawTile = &drawBlankTile;
+	blankTile->drawTileFront = &drawBlankTileFront;
+	blankTile->drawTileRear = &drawBlankTileRear;
 
 	/* Initialize Global Tile Definitions */
 	{
@@ -151,9 +201,12 @@ void renderTile(Room* room, Tile* tile) {
 	if (tile->def->type->useCallList) {
 		glCallList(tile->def->type->callList);
 	} else {
-		/* If drawTile is NULL, then just don't draw */
-		if (tile->def->type->drawTile) {
-			tile->def->type->drawTile(room, tile);
+		/* If drawTiles are NULL, then just don't draw */
+		if (tile->def->type->drawTileFront) {
+			tile->def->type->drawTileFront(room, tile);
+		}
+		if (tile->def->type->drawTileRear) {
+			tile->def->type->drawTileRear(room, tile);
 		}
 	}
 

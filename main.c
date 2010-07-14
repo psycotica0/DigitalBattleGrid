@@ -29,11 +29,15 @@ void viewPort(int width, int height) {
 void init() {
 	initMap();
 	glShadeModel(GL_SMOOTH);
-	glClearColor(0.43f, 0.16f, 0.38f, 0.0f);
+	glClearColor(0.43f, 0.16f, 0.38f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_LINE_SMOOTH);
 	glEnable(GL_POLYGON_SMOOTH);
 	glDepthFunc(GL_LEQUAL);
+
+	/* Alpha Blending */
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	/* Initialize Camera */
 	mainCam.x = 10;
