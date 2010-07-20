@@ -182,7 +182,7 @@ void initMap() {
 	}
 }
 
-void renderTile(Room* room, Tile* tile) {
+void renderTile(Room* room, Tile* tile, int direction) {
 	/* Store the current state */
 	glPushMatrix();
 
@@ -202,11 +202,14 @@ void renderTile(Room* room, Tile* tile) {
 		glCallList(tile->def->type->callList);
 	} else {
 		/* If drawTiles are NULL, then just don't draw */
-		if (tile->def->type->drawTileFront) {
-			tile->def->type->drawTileFront(room, tile);
-		}
-		if (tile->def->type->drawTileRear) {
-			tile->def->type->drawTileRear(room, tile);
+		if (direction == Render_Front) {
+			if (tile->def->type->drawTileFront) {
+				tile->def->type->drawTileFront(room, tile);
+			}
+		} else {
+			if (tile->def->type->drawTileRear) {
+				tile->def->type->drawTileRear(room, tile);
+			}
 		}
 	}
 
@@ -214,7 +217,7 @@ void renderTile(Room* room, Tile* tile) {
 	glPopMatrix();
 }
 
-void renderRoom(Room* room) {
+void renderRoom(Room* room, int direction) {
 	Tile* current = room->map->TopLeft;
 	/* This marks if we're moving left or right */
 	/* If left == 1 then we're moving left */
@@ -228,7 +231,7 @@ void renderRoom(Room* room) {
 
 	/* Go through all tiles */
 	while (current != NULL) {
-		renderTile(room, current);
+		renderTile(room, current, direction);
 		if (left) {
 			if (current->Left == NULL) {
 				current = current->Down;
@@ -250,11 +253,11 @@ void renderRoom(Room* room) {
 	glPopMatrix();
 }
 
-void renderWorld(World* world) {
+void renderWorld(World* world, int direction) {
 	RoomList* current = world->rooms;
 
 	while (current != NULL) {
-		renderRoom(current->value);
+		renderRoom(current->value, direction);
 		current = current->next;
 	}
 }

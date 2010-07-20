@@ -3,6 +3,9 @@
 #include <gl.h>
 #include "chunk_string.h"
 
+#define Render_Front 0
+#define Render_Back 1
+
 struct Tile;
 struct Room;
 
@@ -129,7 +132,7 @@ typedef struct World {
 void initMap();
 
 /* This function is used to render the world */
-void renderWorld(World*);
+void renderWorld(World*, int);
 
 /* This function takes in the two letter code and returns the TileType you should use.*/
 TileType* getTileType(char*);

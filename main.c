@@ -74,7 +74,8 @@ void Draw() {
 
 	UseCam(&mainCam);
 
-	renderWorld(theWorld);
+	renderWorld(theWorld, Render_Front);
+	renderWorld(theWorld, Render_Back);
 
 	SDL_GL_SwapBuffers();
 
