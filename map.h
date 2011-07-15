@@ -1,6 +1,6 @@
 #ifndef _MAP_H_
 #define _MAP_H_
-#include <gl.h>
+#include <GL/gl.h>
 #include "chunk_string.h"
 
 #define Render_Front 0

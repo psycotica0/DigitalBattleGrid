@@ -1,7 +1,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <gl.h>
+#include <GL/gl.h>
 #include <SDL/SDL.h>
 #include "cam.h"
 #include "map.h"
