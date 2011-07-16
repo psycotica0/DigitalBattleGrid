@@ -165,7 +165,7 @@ void initMap() {
 		DefList* curDef;
 		int i;
 
-		globalTileDefs = malloc(sizeof(DefList) * NumTileTypes);
+		globalTileDefs = calloc(NumTileTypes, sizeof(DefList));
 		for (i=0; i < NumTileTypes; i++) {
 			curType = tileTypes + i;
 			curDef = globalTileDefs + i;
@@ -276,7 +276,7 @@ TileType* getTileType(char* code) {
 /* This searches a def list to find the right def */
 Def* findFromDefList(DefList* list, char* code) {
 	while (list != NULL) {
-		if (strcmp(code, list->def->code) == 0) {
+		if (strncmp(code, list->def->code, 2) == 0) {
 			return list->def;
 		}
 		list = list->next;
